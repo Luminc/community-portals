@@ -15,7 +15,7 @@ GET /vacatures?_hn:type=component-rendering&_hn:ref=<ref>&term=<keywords>[...]
 |---|---|---|
 | `term` | `--query` | Keywords; all must match, any order; quotes ignored; `OR` returns nothing |
 | `pagina` | `--page` | 1-indexed page, 20 cards per page; omitted for page 1 |
-| `sinds` | `--jobage` | Publication window: `gisteren`, `3d`, `5d`, `7d`, `10d`, `1m` |
+| `sinds` | `--jobage <days>` | Numeric age; maps 1→`gisteren`, 2–3→`3d`, 4–5→`5d`, 6–7→`7d`, 8–10→`10d`, 11–31→`1m`; above 31 omits `sinds` |
 | `_hn:type`, `_hn:ref` | internal | The results component; see below |
 
 The search page itself has no results. It contains hidden placeholders

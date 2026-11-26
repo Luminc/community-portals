@@ -42,12 +42,22 @@ export function findSearchComponentUrl(html: string): string | null {
   return url.origin === BASE_URL && url.pathname === "/vacatures" ? url.toString() : null
 }
 
+/** The first posting date (YYYY-MM-DD, Dutch calendar) inside a window of `jobage` days ending today. */
+export function cutoffDate(jobage: number, now: Date = new Date()): string {
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Amsterdam" }).format(now)
+  const date = new Date(`${today}T00:00:00Z`)
+  date.setUTCDate(date.getUTCDate() - jobage)
+  return date.toISOString().slice(0, 10)
+}
+
+// Cards carry a calendar date, so the cutoff compares dates, not times.
+// A card without a date cannot be judged and is kept (SKILL.md says so).
 function filterResults(results: readonly VacancyResult[], options: SearchOpts): readonly VacancyResult[] {
   const location = options.location?.toLocaleLowerCase("nl-NL")
-  const cutoff = options.jobage === undefined ? null : Date.now() - options.jobage * 86_400_000
+  const cutoff = options.jobage === undefined ? null : cutoffDate(options.jobage)
   return results
     .filter((result) => !location || result.location?.toLocaleLowerCase("nl-NL").includes(location))
-    .filter((result) => cutoff === null || result.date === null || Date.parse(result.date) >= cutoff - 86_400_000)
+    .filter((result) => cutoff === null || result.date === null || result.date >= cutoff)
     .slice(0, options.limit)
 }
 

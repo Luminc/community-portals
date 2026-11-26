@@ -12,6 +12,13 @@ describe("output hygiene", () => {
     expect(text).not.toContain("verborgen")
   })
 
+  test("hiding written with character references is still hidden", () => {
+    const html = `<p>Zichtbaar</p><span style="display&#58;none">verborgen 1</span>
+      <span style="display&colon;none">verborgen 2</span><span style="visibility&#x3a; hidden">verborgen 3</span>`
+    const text = cleanHtml(html)
+    expect(text).toBe("Zichtbaar")
+  })
+
   test("a hidden element in a card's summary is dropped", () => {
     const html = `<li class="vacancy-list__item"><section class="vacancy">
       <h2 class="vacancy__title"><a href="/vacatures/x-1">Titel</a></h2>

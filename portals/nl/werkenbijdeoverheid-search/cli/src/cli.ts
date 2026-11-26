@@ -41,8 +41,14 @@ function parseFlags(arguments_: readonly string[]): Flags {
       if (argument) positional.push(argument)
       continue
     }
-    const rawKey = argument.replace(/^-+/, "")
+    const flag = argument.replace(/^-+/, "")
+    const eq = flag.indexOf("=")
+    const rawKey = eq === -1 ? flag : flag.slice(0, eq)
     const key = aliases[rawKey] ?? rawKey
+    if (eq !== -1) {
+      values[key] = flag.slice(eq + 1)
+      continue
+    }
     const next = arguments_[index + 1]
     if (!next || next.startsWith("-")) values[key] = true
     else {
@@ -95,7 +101,18 @@ async function main(): Promise<number> {
       return 1
     }
   }
+  // Stray words are an invalid invocation, not something to ignore: a
+  // keyword typed outside --query would otherwise vanish from the search.
+  const maxPositional = command === "detail" ? 2 : 1
+  if (flags.positional.length > maxPositional) {
+    writeError(`unexpected argument "${flags.positional[maxPositional]}"; quote multi-word values, see --help`, "BAD_ARG")
+    return 1
+  }
   if (command === "search") {
+    if (flags.values["location"] !== undefined && textFlag(flags.values["location"]) === undefined) {
+      writeError("--location requires a non-empty value", "BAD_ARG")
+      return 1
+    }
     const query = textFlag(flags.values["query"])
     if (!query) {
       writeError("--query/-q is required", "MISSING_REQUIRED")

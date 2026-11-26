@@ -1,7 +1,8 @@
 # Fixtures
 
-Captured from www.werkenbijdeoverheid.nl on 2026-11-26 and trimmed. Content on
-that site is published under CC0 (https://www.werkenbijdeoverheid.nl/copyright).
+Captured from www.werkenbijdeoverheid.nl on 2026-11-26 and trimmed. That site's
+vacancy content is published under CC0; photos are excluded and were not
+collected (https://www.werkenbijdeoverheid.nl/copyright).
 
 | File | Source | Trimmed to |
 |---|---|---|

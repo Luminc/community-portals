@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { join } from "node:path"
-import { dutchDate, normalizeVacancyInput, parseDetailPage, parseSearchPage } from "../src/parsers.js"
+import { dutchDate, normalizeVacancyInput, parseDetailPage, parseSearchPage, webUrl } from "../src/parsers.js"
 
 const fixture = (name: string): Promise<string> => Bun.file(join(import.meta.dir, "fixtures", name)).text()
 
@@ -55,7 +55,7 @@ describe("detail page", () => {
       url: "https://www.werkenbijdeoverheid.nl/vacatures/adviseur-bestuurlijke-zaken-VRU-2026-1348",
     })
     expect(detail.salary).toContain("(bruto)")
-    expect(detail.applyUrl).toStartWith("https://")
+    expect(detail.applyUrl).toBe("https://vru.nl/werkenbij/vacatures-kantoor-en-ondersteuning/1351623/")
     expect(detail.description).toStartWith("Dit ga je doen")
     expect(detail.description).toContain("Dit vragen wij")
   })
@@ -67,6 +67,23 @@ describe("detail page", () => {
 
   test("fails clearly without a canonical vacancy URL", () => {
     expect(() => parseDetailPage("<h1 class=\"job-header__header\">X</h1>")).toThrow("canonical")
+  })
+})
+
+describe("apply links", () => {
+  test("keeps http(s) links, resolves relative ones, and drops other schemes", () => {
+    expect(webUrl("https://example.org/apply?id=1&amp;x=2")).toBe("https://example.org/apply?id=1&x=2")
+    expect(webUrl("/vacatures/x-1/solliciteren")).toBe("https://www.werkenbijdeoverheid.nl/vacatures/x-1/solliciteren")
+    expect(webUrl("javascript:alert(1)")).toBeNull()
+    expect(webUrl("data:text/html,hi")).toBeNull()
+    expect(webUrl(undefined)).toBeNull()
+  })
+
+  test("a javascript: apply link in a page becomes null", () => {
+    const html = `<link rel="canonical" href="https://www.werkenbijdeoverheid.nl/vacatures/x-1"/>
+      <div class="job-header__title"><h1 class="job-header__header">X</h1></div>
+      <button onclick="applyExternClick('javascript:alert(1)')">Solliciteren</button>`
+    expect(parseDetailPage(html).applyUrl).toBeNull()
   })
 })
 

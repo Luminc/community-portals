@@ -140,6 +140,18 @@ function detailSections(html: string): string {
   return sections.join("\n\n")
 }
 
+/** An absolute http(s) URL, relative links resolved against the site; anything else (javascript:, data:, garbage) is null. */
+export function webUrl(raw: string | undefined): string | null {
+  if (!raw) return null
+  try {
+    const url = new URL(decodeHtml(raw).trim(), BASE_URL)
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : null
+  } catch (error) {
+    if (error instanceof TypeError) return null
+    throw error
+  }
+}
+
 /** A detail page, read from its header (title, employer, key facts) and text sections. */
 export function parseDetailPage(html: string): VacancyDetail {
   const canonical = /<link[^>]*rel="canonical"[^>]*href="([^"]+)"/i.exec(html)?.[1]
@@ -169,7 +181,7 @@ export function parseDetailPage(html: string): VacancyDetail {
     contractType: labelledValue(facts, "Arbeidsovereenkomst"),
     contractDuration: labelledValue(facts, "Contractduur"),
     url: `${BASE_URL}/vacatures/${id}`,
-    applyUrl: apply ? decodeHtml(apply) : null,
+    applyUrl: webUrl(apply),
     description: detailSections(html),
   }
 }

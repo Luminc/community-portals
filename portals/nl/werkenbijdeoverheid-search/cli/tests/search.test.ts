@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test"
 import { join } from "node:path"
-import { buildSearchUrl, runSearch, sinceParameter } from "../src/commands/search.js"
+import { buildSearchUrl, cutoffDate, runSearch, sinceParameter } from "../src/commands/search.js"
 
 const originalFetch = globalThis.fetch
 const originalStdoutWrite = process.stdout.write
@@ -67,6 +67,27 @@ describe("search", () => {
 
     await runSearch({ query: "communicatie", page: 1, limit: 1, format: "json" })
     expect(JSON.parse(stdout()).results).toHaveLength(1)
+  })
+})
+
+describe("--jobage cutoff", () => {
+  test("is a calendar date in the Dutch time zone", () => {
+    // 23:30 UTC on 25 November is already 26 November in Amsterdam.
+    const now = new Date("2026-11-25T23:30:00Z")
+    expect(cutoffDate(0, now)).toBe("2026-11-26")
+    expect(cutoffDate(1, now)).toBe("2026-11-25")
+    expect(cutoffDate(7, now)).toBe("2026-11-19")
+  })
+
+  test("drops cards posted before the cutoff date", async () => {
+    // The fixture's cards are dated 2026-11-25 and 2026-11-13.
+    await serveFixtures([])
+    const stdout = captureStdout()
+    const days = Math.round((Date.now() - Date.parse("2026-11-20T12:00:00Z")) / 86_400_000)
+    await runSearch({ query: "communicatie", jobage: days, page: 1, limit: 20, format: "json" })
+    const dates = JSON.parse(stdout()).results.map((r: { date: string }) => r.date)
+    expect(dates).toContain("2026-11-25")
+    expect(dates).not.toContain("2026-11-13")
   })
 })
 

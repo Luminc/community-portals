@@ -44,7 +44,7 @@ Query syntax: all words must match, in any order; quotes are ignored (no exact p
 Flags:
 - `--query` / `-q <text>`: keywords. **Required.**
 - `--location` / `-l <text>`: keep vacancies whose place contains this text (filtered client-side; the site's postcode filter is not reachable through its URL).
-- `--jobage <days>`: posted within N days. Uses the site's own filter (yesterday, 3, 5, 7, 10 days, one month), then the exact cutoff on the cards. Above 31 days, no filter.
+- `--jobage <days>`: posted within N days (today and the N days before it, Dutch calendar). Narrows on the server with the site's own filter (yesterday, 3, 5, 7, 10 days, one month), then applies the exact date cutoff to the cards. A card without a posting date is kept. Above 31 days the site has no matching filter: only the requested page is filtered, so later pages can still hold older vacancies.
 - `--page <n>`: 1-indexed page, 20 results per page.
 - `--limit` / `-n <n>`: cap the results emitted (default 20).
 - `--format json|table|plain`: default `json`.
@@ -58,9 +58,13 @@ bun run .agents/skills/werkenbijdeoverheid-search/cli/src/cli.ts detail <slug|ur
 Takes the `id` from search results (e.g. `adviseur-bestuurlijke-zaken-VRU-2026-1348`),
 a `/vacatures/<slug>` path or a full URL on werkenbijdeoverheid.nl. Returns the
 title, employer, place, hours, salary, level, field, contract type and duration,
-closing date, the employer's apply link, and the full text of the "Dit ga je
-doen", "Dit krijg je", "Dit vragen wij", "Hier kom je te werken" and
-"Bijzonderheden" sections.
+closing date, the employer's apply link (http(s) only), and the text of the
+"Dit ga je doen", "Dit krijg je", "Dit vragen wij", "Hier kom je te werken" and
+"Bijzonderheden" sections. That text is sanitized, not a literal copy:
+comments, scripts and elements hidden with `hidden` or an inline
+`display:none` style are removed, and invisible characters are stripped;
+hiding done only through stylesheets (off-screen, zero font size) is not
+detected.
 
 ## Usage examples
 
@@ -88,12 +92,12 @@ bun run .agents/skills/werkenbijdeoverheid-search/cli/src/cli.ts detail adviseur
 | `search` | json, table, plain | `{ meta: { count, page, total }, results: [{ id, title, company, location, date, url, deadline, hours, salary, educationLevel, contractType, summary }] }` |
 | `detail` | json, plain | `{ id, title, company, location, deadline, hours, salary, salaryDescription, educationLevel, field, contractType, contractDuration, url, applyUrl, description }` |
 
-Missing values are `null`. Errors go to stderr as `{ "error": "...", "code": "..." }` with exit code 1.
+In JSON, missing values are `null` (a detail without text sections has `description: ""`). Table and plain output show `—` for a missing value or leave the line out. Errors go to stderr as `{ "error": "...", "code": "..." }` with exit code 1.
 
 ## Notes
 
 - The site runs on the same platform as Werken voor Nederland (national government only). Search cards are identical; detail pages here carry **no** JSON-LD, so details are read from the page header and sections.
-- Results are not sorted by date. `--jobage` narrows on the server, so a recent vacancy is not lost on a later page.
+- Results are not sorted by date. Up to 31 days, `--jobage` narrows on the server, so a recent vacancy is not lost on a later page; above 31 days it filters the requested page only.
 - The results component's reference (`_hn:ref`) changes between deployments; it is discovered from the search page on every call, never stored.
 - An unknown URL parameter makes the site return zero results, which is why unknown CLI flags are rejected rather than passed through.
 - Many vacancies are also posted on the employer's own site and by intermediaries; dedupe on title and employer when combining sources.

@@ -16,6 +16,8 @@ function renderPlain(detail: VacancyDetail): string {
     detail.salary ? `Salary: ${detail.salary}` : "",
     detail.contractType ? `Contract: ${detail.contractType}${detail.contractDuration ? ` (${detail.contractDuration})` : ""}` : "",
     detail.educationLevel ? `Level: ${detail.educationLevel}` : "",
+    detail.field ? `Field: ${detail.field}` : "",
+    detail.salaryDescription ? `Salary details: ${detail.salaryDescription}` : "",
     "",
     detail.description || "(no description)",
     "",

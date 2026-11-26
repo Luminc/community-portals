@@ -61,11 +61,33 @@ const ATTRS = String.raw`(?:[^>"']|"[^"]*"|'[^']*')*`
 
 const VOID_TAGS = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"])
 
+const NAMED_REFS: Readonly<Record<string, string>> = {
+  colon: ":", semi: ";", amp: "&", nbsp: " ", tab: "\t", newline: "\n", lpar: "(", rpar: ")",
+}
+
+/**
+ * An attribute value as the browser reads it: character references decoded,
+ * with or without their closing semicolon, so `display&#58;none` or
+ * `display&colon;none` is seen as `display:none`.
+ */
+export function decodeAttribute(value: string): string {
+  return value
+    .replace(/&#[xX]([0-9a-fA-F]+);?/g, (_, hex: string) => {
+      const cp = parseInt(hex, 16)
+      return cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : ""
+    })
+    .replace(/&#(\d+);?/g, (_, dec: string) => {
+      const cp = Number(dec)
+      return cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : ""
+    })
+    .replace(/&([a-zA-Z]+);/g, (whole, name: string) => NAMED_REFS[name.toLowerCase()] ?? whole)
+}
+
 /** Whether an opening tag's attributes keep it from rendering: `hidden`, or an inline style that hides it. */
 function isHiddenTag(attrs: string): boolean {
   for (const m of attrs.matchAll(/([^\s"'=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g)) {
     const name = (m[1] ?? "").toLowerCase()
-    const value = m[2] ?? m[3] ?? m[4] ?? ""
+    const value = decodeAttribute(m[2] ?? m[3] ?? m[4] ?? "")
     if (name === "hidden") return true
     if (name === "style" && /(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden|mso-hide\s*:\s*all)\b/i.test(value)) {
       return true
