@@ -79,6 +79,12 @@ describe("--jobage cutoff", () => {
     expect(cutoffDate(7, now)).toBe("2026-11-19")
   })
 
+  test("a huge job age is capped instead of producing an invalid date", () => {
+    const now = new Date("2026-11-25T12:00:00Z")
+    expect(cutoffDate(Number.MAX_SAFE_INTEGER, now)).toBe(cutoffDate(36_500, now))
+    expect(cutoffDate(100_000_000, now)).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+
   test("drops cards posted before the cutoff date", async () => {
     // The fixture's cards are dated 2026-11-25 and 2026-11-13.
     await serveFixtures([])

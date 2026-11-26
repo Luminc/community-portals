@@ -42,11 +42,14 @@ export function findSearchComponentUrl(html: string): string | null {
   return url.origin === BASE_URL && url.pathname === "/vacatures" ? url.toString() : null
 }
 
+const MAX_JOBAGE_DAYS = 36_500
+
 /** The first posting date (YYYY-MM-DD, Dutch calendar) inside a window of `jobage` days ending today. */
 export function cutoffDate(jobage: number, now: Date = new Date()): string {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Amsterdam" }).format(now)
   const date = new Date(`${today}T00:00:00Z`)
-  date.setUTCDate(date.getUTCDate() - jobage)
+  // Any age beyond a century means "everything"; capping it keeps the Date valid.
+  date.setUTCDate(date.getUTCDate() - Math.min(jobage, MAX_JOBAGE_DAYS))
   return date.toISOString().slice(0, 10)
 }
 
